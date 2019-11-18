@@ -34,6 +34,17 @@ CREATE TABLE IF NOT EXISTS d_genre
     title TEXT NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS d_age_category
+(
+    id    SERIAL PRIMARY KEY,
+    adult BOOLEAN NOT NULL UNIQUE
+);
+
+INSERT INTO d_age_category(adult)
+VALUES (TRUE),
+       (FALSE)
+ON CONFLICT DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS d_movie_franchise
 (
     id   SERIAL PRIMARY KEY,
@@ -69,7 +80,7 @@ CREATE TABLE IF NOT EXISTS d_keyword
 CREATE TABLE IF NOT EXISTS d_movie
 (
     id                   SERIAL PRIMARY KEY,
-    id_release_date      INT REFERENCES d_date (id),
+    id_age_category      INT REFERENCES d_age_category (id),
     id_movie_franchise   INT REFERENCES d_movie_franchise (id),
     id_original_language INT REFERENCES d_language (id),
     original_title       TEXT NOT NULL,
@@ -162,21 +173,10 @@ CREATE TABLE IF NOT EXISTS d_crew
     id_people     INT REFERENCES d_people (id)
 );
 
-CREATE TABLE IF NOT EXISTS d_age_category
+CREATE TABLE IF NOT EXISTS d_release_status
 (
-    id    SERIAL PRIMARY KEY,
-    adult BOOLEAN NOT NULL UNIQUE
-);
-
-INSERT INTO d_age_category(adult)
-VALUES (TRUE),
-       (FALSE)
-ON CONFLICT DO NOTHING;
-
-CREATE TABLE IF NOT EXISTS d_status
-(
-    id    SERIAL PRIMARY KEY,
-    title TEXT NOT NULL UNIQUE
+    id   SERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS d_user
@@ -185,16 +185,15 @@ CREATE TABLE IF NOT EXISTS d_user
     abstract_name TEXT NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS f_movie_characteristics
+CREATE TABLE IF NOT EXISTS f_movie_popularity
 (
-    id_date         INT REFERENCES d_date (id),
-    id_movie        INT REFERENCES d_movie (id),
-    id_age_category INT REFERENCES d_age_category (id),
-    id_status       INT REFERENCES d_status (id),
-    id_user         INT REFERENCES d_user (id),
-    f_rating        REAL CHECK (f_rating IS NULL OR (f_rating >= 0 AND f_rating <= 5)),
-    f_budget        INT CHECK (f_budget IS NULL OR f_budget >= 0),
-    f_revenue       INT,
-    f_runtime       REAL CHECK (f_runtime IS NULL OR f_runtime >= 0),
-    f_popularity    REAL
+    id_date           INT REFERENCES d_date (id),
+    id_movie          INT REFERENCES d_movie (id),
+    id_release_status INT REFERENCES d_release_status (id),
+    id_user           INT REFERENCES d_user (id),
+    f_rating          REAL CHECK (f_rating IS NULL OR (f_rating >= 0 AND f_rating <= 5)),
+    f_budget          INT CHECK (f_budget IS NULL OR f_budget >= 0),
+    f_revenue         INT,
+    f_runtime         REAL CHECK (f_runtime IS NULL OR f_runtime >= 0),
+    f_popularity      REAL
 );
