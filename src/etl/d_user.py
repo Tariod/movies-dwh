@@ -13,15 +13,13 @@ cursor = conn.cursor()
 movies = etl.fromcsv('dataset/ratings.csv', encoding='utf8')
 
 # TRANSFORMATION
-#users = etl.cut(movies, 'userId')
-#users = etl.groupselectfirst(users, 'userId')
-#users = etl.selectne(users, 'userId', '')
-timestamps = etl.cut(movies, 'timestamp')
-timestamps = etl.convert(timestamps, 'timestamp', lambda t: datetime.fromtimestamp(float(t)/1000.).strftime('%Y-%m-%d'))
-timestamps = etl.groupselectfirst(timestamps, 'timestamp')
+userids = list(range(1, 10657))
+vals = list('u' + str(x) for x in range(1, 10657))
 
-#print(users)
-print(timestamps)
+table = [userids, vals]
+table = etl.fromcolumns(table)
+table = etl.rename(table, 'f0', 'id')
+table = etl.rename(table, 'f1', 'abstract_name')
 
 # LOAD
-#etl.todb(table, cursor, 'd_user')
+etl.todb(table, cursor, 'd_user')
