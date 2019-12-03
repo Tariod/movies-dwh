@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS d_movie_franchise
 CREATE TABLE IF NOT EXISTS d_studio
 (
     id   SERIAL PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE
+    name TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS d_language
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS d_country
 CREATE TABLE IF NOT EXISTS d_keyword
 (
     id   INT PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE
+    name TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS d_movie
@@ -85,8 +85,7 @@ CREATE TABLE IF NOT EXISTS d_movie
     id_original_language INT REFERENCES d_language (id),
     original_title       TEXT NOT NULL,
     title                TEXT NOT NULL,
-    imdb_id              TEXT NOT NULL UNIQUE,
-    tmdb_id              TEXT NOT NULL UNIQUE
+    imdb_id              TEXT
 );
 
 CREATE TABLE IF NOT EXISTS movie_genres
@@ -134,7 +133,6 @@ ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS d_character
 (
     id        SERIAL PRIMARY KEY,
-    id_gender INT REFERENCES d_gender (id),
     name      TEXT NOT NULL UNIQUE
 );
 
@@ -142,8 +140,7 @@ CREATE TABLE IF NOT EXISTS d_people
 (
     id        SERIAL PRIMARY KEY,
     id_gender INT REFERENCES d_gender (id),
-    name      TEXT NOT NULL,
-    id_tmdb   TEXT NOT NULL UNIQUE
+    name      TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS d_department
