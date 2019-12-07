@@ -1,13 +1,18 @@
+import os
 import petl as etl
 import psycopg2
 
-conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
-conn = psycopg2.connect(conn_string)
+conn = psycopg2.connect(dbname=os.getenv('DB_NAME'),
+                        user=os.getenv('DB_USER'),
+                        password=os.getenv('DB_PASSWORD'),
+                        host=os.getenv('DB_HOST'),
+                        port=os.getenv('DB_PORT'))
 cursor = conn.cursor()
 
 # GET CHARACTER FUNCTION (table: d_character)
 # EXTRACT
-movies = etl.fromcsv('dataset/credits.csv', encoding='utf8')
+DATA_SOURCE_DIR = os.getenv('DATA_SOURCE_DIR')
+movies = etl.fromcsv(DATA_SOURCE_DIR + 'credits.csv', encoding='utf8')
 
 # TRANSFORMATION
 table = etl.cut(movies, 'cast')
