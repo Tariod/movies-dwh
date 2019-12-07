@@ -1,5 +1,4 @@
 import petl as etl
-import csv
 import psycopg2
 from collections import OrderedDict
 
@@ -31,11 +30,11 @@ table = etl.selectne(table, 'id', None)
 movies = etl.fromdb(conn, 'SELECT * from d_movie')
 movies = etl.cut(movies, 'id', 'tmdb_id')
 movies = dict(etl.data(movies))
-movies_map = {movies[k] : k for k in movies}
+movies_map = {movies[k]: k for k in movies}
 
 characters = etl.fromdb(conn, 'SELECT * from d_keyword  ')
 characters = dict(etl.data(etl.cut(characters, 'id', 'name')))
-characters_map = {characters[k] : k for k in characters}
+characters_map = {characters[k]: k for k in characters}
 
 mappings = OrderedDict()
 mappings['id_movie'] = 'id', movies_map

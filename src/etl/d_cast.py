@@ -1,7 +1,6 @@
-import petl as etl
-import csv
-import psycopg2
 from collections import OrderedDict
+import petl as etl
+import psycopg2
 
 conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
 conn = psycopg2.connect(conn_string)
@@ -27,7 +26,7 @@ table = etl.convert(table, 'name', str)
 table = etl.sub(table, 'name', '(^[ ]+)|[ ]+$', '')
 table = etl.sub(table, 'name', '"', '')
 table = etl.selectne(table, 'name', '')
-table = etl.sub(table, 'name_person', '[,\'\]]', '')
+table = etl.sub(table, 'name_person', '[,\'\\]]', '')
 table = etl.sub(table, 'name_person', '(^[ ]+)|[ ]+$', '')
 table = etl.sub(table, 'id', '[ ,\']', '')
 table = etl.sub(table, 'id', ' ', '')
@@ -35,17 +34,17 @@ table = etl.selectne(table, 'id', None)
 
 characters = etl.fromdb(conn, 'SELECT * from d_character')
 characters = dict(etl.data(characters))
-characters_map = {characters[k] : k for k in characters}
+characters_map = {characters[k]: k for k in characters}
 
 movies = etl.fromdb(conn, 'SELECT * from d_movie')
 movies = etl.cut(movies, 'id', 'tmdb_id')
 movies = dict(etl.data(movies))
-movies_map = {movies[k] : k for k in movies}
+movies_map = {movies[k]: k for k in movies}
 
 people = etl.fromdb(conn, 'SELECT * from d_people')
 people = etl.cut(people, 'id', 'name')
 people = dict(etl.data(people))
-people_map = {people[k] : k for k in people}
+people_map = {people[k]: k for k in people}
 
 mappings = OrderedDict()
 mappings['id_movie'] = 'id', movies_map

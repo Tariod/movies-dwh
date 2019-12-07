@@ -1,7 +1,5 @@
 import petl as etl
-import csv
 import psycopg2
-from ftfy import fix_encoding
 from collections import OrderedDict
 
 conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
@@ -10,11 +8,14 @@ cursor = conn.cursor()
 
 # GET MOVIE FUNCTION (table: d_movie)
 # EXTRACT
-movies = etl.fromcsv('dataset/movies_metadata.csv', encoding='utf8', errors='ignore')
+movies = etl.fromcsv('dataset/movies_metadata.csv', encoding='utf8',
+                     errors='ignore')
 
 # TRANSFORMATION
-table = etl.cut(movies, 'id', 'adult', 'belongs_to_collection', 'original_language', 'original_title', 'title', 'imdb_id')
-table = etl.select(table, 'adult', lambda field: field == 'True' or field == 'False')
+table = etl.cut(movies, 'id', 'adult', 'belongs_to_collection',
+                'original_language', 'original_title', 'title', 'imdb_id')
+table = etl.select(table, 'adult',
+                   lambda field: field == 'True' or field == 'False')
 mappings = OrderedDict()
 mappings['id'] = 'id'
 mappings['id_age_category'] = 'adult', {'True': 1, 'False': 2}
@@ -25,19 +26,22 @@ mappings['imdb_id'] = 'imdb_id'
 mappings['original_language'] = 'original_language'
 table = etl.fieldmap(table, mappings)
 
-franchise = etl.split(table, 'belongs_to_collection', 'poster_path', ['info', 'trash'])
-franchise = etl.split(franchise, 'info', '\'name\':', ['id_movie_franchise', 'name'])
-franchise = etl.cut(franchise, 'id', 'id_age_category', 'name', 'original_language', 'original_title', 'title', 'imdb_id')
+franchise = etl.split(table, 'belongs_to_collection', 'poster_path',
+                      ['info', 'trash'])
+franchise = etl.split(franchise, 'info', '\'name\':',
+                      ['id_movie_franchise', 'name'])
+franchise = etl.cut(franchise, 'id', 'id_age_category', 'name',
+                    'original_language', 'original_title', 'title', 'imdb_id')
 franchise = etl.sub(franchise, 'name', '[,\'"]', '')
 franchise = etl.sub(franchise, 'name', '(^[ ]+)|[ ]+$', '')
 
 languages = etl.fromdb(conn, 'SELECT * from d_language')
 languages = dict(etl.data(etl.cut(languages, 'id', 'iso_639_1')))
-languages_map = {languages[k] : k for k in languages}
+languages_map = {languages[k]: k for k in languages}
 
 franchises = etl.fromdb(conn, 'SELECT * from d_movie_franchise')
 franchises = dict(etl.data(etl.cut(franchises, 'id', 'name')))
-franchises_map = {franchises[k] : k for k in franchises}
+franchises_map = {franchises[k]: k for k in franchises}
 
 mappings = OrderedDict()
 mappings['id_age_category'] = 'id_age_category'

@@ -1,7 +1,6 @@
-import petl as etl
-import csv
-import psycopg2
 from collections import OrderedDict
+import petl as etl
+import psycopg2
 
 conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
 conn = psycopg2.connect(conn_string)
@@ -43,21 +42,21 @@ table = etl.selectne(table, 'id', None)
 
 departments = etl.fromdb(conn, 'SELECT * from d_department')
 departments = dict(etl.data(departments))
-departments_map = {departments[k] : k for k in departments}
+departments_map = {departments[k]: k for k in departments}
 
 jobs = etl.fromdb(conn, 'SELECT * from d_job')
 jobs = dict(etl.data(jobs))
-jobs_map = {jobs[k] : k for k in jobs}
+jobs_map = {jobs[k]: k for k in jobs}
 
 movies = etl.fromdb(conn, 'SELECT * from d_movie')
 movies = etl.cut(movies, 'id', 'tmdb_id')
 movies = dict(etl.data(movies))
-movies_map = {movies[k] : k for k in movies}
+movies_map = {movies[k]: k for k in movies}
 
 people = etl.fromdb(conn, 'SELECT * from d_people')
 people = etl.cut(people, 'id', 'name')
 people = dict(etl.data(people))
-people_map = {people[k] : k for k in people}
+people_map = {people[k]: k for k in people}
 
 mappings = OrderedDict()
 mappings['id_movie'] = 'id', movies_map
@@ -68,7 +67,6 @@ table = etl.fieldmap(table, mappings)
 
 table = etl.convert(table, 'id_movie', str)
 table = etl.select(table, lambda rec: '-' not in rec.id_movie)
-
 
 # LOAD
 etl.todb(table, cursor, 'd_crew')

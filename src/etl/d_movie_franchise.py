@@ -1,5 +1,4 @@
 import petl as etl
-import csv
 import psycopg2
 
 conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
@@ -12,7 +11,8 @@ movies = etl.fromcsv('dataset/movies_metadata.csv', encoding='utf8')
 
 # TRANSFORMATION
 table = etl.cut(movies, 'belongs_to_collection')
-table = etl.split(table, 'belongs_to_collection', 'poster_path', ['info', 'trash'])
+table = etl.split(table, 'belongs_to_collection', 'poster_path',
+                  ['info', 'trash'])
 table = etl.cut(table, 'info')
 table = etl.split(table, 'info', '\'name\':', ['id', 'name'])
 table = etl.split(table, 'id', ':', ['trash', 'id'])

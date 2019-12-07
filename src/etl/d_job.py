@@ -1,5 +1,4 @@
 import petl as etl
-import csv
 import psycopg2
 
 conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
@@ -17,7 +16,7 @@ table = etl.splitdown(table, 'crew', '}')
 table = etl.split(table, 'crew', '\'name\':', ['job', 'trash'])
 table = etl.split(table, 'job', '\'job\':', ['info', 'job'])
 table = etl.cut(table, 'job')
-table = etl.sub(table, 'job', '[\'\],"]', '')
+table = etl.sub(table, 'job', '[\'\\],"]', '')
 table = etl.sub(table, 'job', '(^[ ]+)|([ ]+$)', '')
 table = etl.selectnotnone(table, 'job')
 table = etl.groupselectfirst(table, 'job')

@@ -1,5 +1,4 @@
 import petl as etl
-import csv
 import psycopg2
 from collections import OrderedDict
 
@@ -16,7 +15,8 @@ table = etl.cut(movies, 'id', 'production_countries')
 table = etl.convert(table, 'production_countries', str)
 table = etl.selectcontains(table, 'production_countries', 'name')
 table = etl.splitdown(table, 'production_countries', '}')
-table = etl.split(table, 'production_countries', '\'name\':', ['trash', 'id_studio'])
+table = etl.split(table, 'production_countries', '\'name\':',
+                  ['trash', 'id_studio'])
 table = etl.cut(table, 'id', 'id_studio')
 table = etl.sub(table, 'id_studio', '[\'",]', '')
 table = etl.sub(table, 'id_studio', '(^[ ]+)|[ ]+$', '')
@@ -28,12 +28,12 @@ table = etl.selectne(table, 'id', None)
 
 characters = etl.fromdb(conn, 'SELECT * from d_country')
 characters = dict(etl.data(etl.cut(characters, 'id', 'name')))
-characters_map = {characters[k] : k for k in characters}
+characters_map = {characters[k]: k for k in characters}
 
 movies = etl.fromdb(conn, 'SELECT * from d_movie')
 movies = etl.cut(movies, 'id', 'tmdb_id')
 movies = dict(etl.data(movies))
-movies_map = {movies[k] : k for k in movies}
+movies_map = {movies[k]: k for k in movies}
 
 mappings = OrderedDict()
 mappings['id_movie'] = 'id', movies_map

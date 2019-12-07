@@ -1,7 +1,5 @@
 import petl as etl
-import csv
 import psycopg2
-from collections import OrderedDict
 
 conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
 conn = psycopg2.connect(conn_string)

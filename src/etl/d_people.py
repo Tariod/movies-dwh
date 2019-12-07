@@ -1,5 +1,4 @@
 import petl as etl
-import csv
 import psycopg2
 
 conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
@@ -62,6 +61,7 @@ crew = etl.cut(crew, 'name', 'id')
 crew = etl.rename(crew, 'id', 'id_tmdb')
 
 crew = etl.antijoin(crew, table, key='id_tmdb')
+
 # LOAD
 etl.todb(table, cursor, 'd_people')
 etl.appenddb(crew, cursor, 'd_people')
