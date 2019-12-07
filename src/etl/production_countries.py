@@ -30,8 +30,13 @@ characters = etl.fromdb(conn, 'SELECT * from d_country')
 characters = dict(etl.data(etl.cut(characters, 'id', 'name')))
 characters_map = {characters[k] : k for k in characters}
 
+movies = etl.fromdb(conn, 'SELECT * from d_movie')
+movies = etl.cut(movies, 'id', 'tmdb_id')
+movies = dict(etl.data(movies))
+movies_map = {movies[k] : k for k in movies}
+
 mappings = OrderedDict()
-mappings['id_movie'] = 'id'
+mappings['id_movie'] = 'id', movies_map
 mappings['id_country'] = 'id_studio', characters_map
 table = etl.fieldmap(table, mappings)
 

@@ -49,13 +49,26 @@ jobs = etl.fromdb(conn, 'SELECT * from d_job')
 jobs = dict(etl.data(jobs))
 jobs_map = {jobs[k] : k for k in jobs}
 
+movies = etl.fromdb(conn, 'SELECT * from d_movie')
+movies = etl.cut(movies, 'id', 'tmdb_id')
+movies = dict(etl.data(movies))
+movies_map = {movies[k] : k for k in movies}
+
+people = etl.fromdb(conn, 'SELECT * from d_people')
+people = etl.cut(people, 'id', 'name')
+people = dict(etl.data(people))
+people_map = {people[k] : k for k in people}
+
 mappings = OrderedDict()
-mappings['id_movie'] = 'id'
+mappings['id_movie'] = 'id', movies_map
 mappings['id_department'] = 'department', departments_map
 mappings['id_job'] = 'job', jobs_map
-mappings['id_people'] = 'id_people'
+mappings['id_people'] = 'id_people', people_map
 table = etl.fieldmap(table, mappings)
 
-print(table)
+table = etl.convert(table, 'id_movie', str)
+table = etl.select(table, lambda rec: '-' not in rec.id_movie)
+
+
 # LOAD
 etl.todb(table, cursor, 'd_crew')

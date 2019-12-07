@@ -21,16 +21,7 @@ table = etl.sub(table, 'job', '[\'\],"]', '')
 table = etl.sub(table, 'job', '(^[ ]+)|([ ]+$)', '')
 table = etl.selectnotnone(table, 'job')
 table = etl.groupselectfirst(table, 'job')
-
-
-values = etl.data(table)
-valuesNew = []
-vals = list(range(1, etl.nrows(table) + 1))
-flat_list = [list(sublist) for sublist in values]
-table = [flat_list, vals]
-table = etl.fromcolumns(table)
-table = etl.unpack(table, 'f0', ['name'])
-table = etl.rename(table, 'f1', 'id')
+table = etl.rename(table, 'job', 'name')
 
 # LOAD
 etl.todb(table, cursor, 'd_job')

@@ -21,15 +21,7 @@ table = etl.sub(table, 'department', '[\'\],]', '')
 table = etl.sub(table, 'department', '(^[ ]+)|([ ]+$)', '')
 table = etl.selectnotnone(table, 'department')
 table = etl.groupselectfirst(table, 'department')
-
-values = etl.data(table)
-valuesNew = []
-vals = list(range(1, etl.nrows(table) + 1))
-flat_list = [list(sublist) for sublist in values]
-table = [flat_list, vals]
-table = etl.fromcolumns(table)
-table = etl.unpack(table, 'f0', ['name'])
-table = etl.rename(table, 'f1', 'id')
+table = etl.rename(table, 'department', 'name')
 
 # LOAD
 etl.todb(table, cursor, 'd_department')

@@ -134,13 +134,13 @@ ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS d_character
 (
     id        SERIAL PRIMARY KEY,
+    id_gender INT REFERENCES d_gender (id),
     name      TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS d_people
 (
     id        SERIAL PRIMARY KEY,
-    id_gender INT REFERENCES d_gender (id),
     name      TEXT NOT NULL
 );
 
