@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS d_studio
 CREATE TABLE IF NOT EXISTS d_language
 (
     id        SERIAL PRIMARY KEY,
-    name      TEXT NOT NULL UNIQUE,
+    name      TEXT NOT NULL,
     iso_639_1 TEXT NOT NULL UNIQUE
 );
 
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS d_country
 
 CREATE TABLE IF NOT EXISTS d_keyword
 (
-    id   INT PRIMARY KEY,
+    id   SERIAL PRIMARY KEY,
     name TEXT NOT NULL
 );
 
@@ -85,7 +85,8 @@ CREATE TABLE IF NOT EXISTS d_movie
     id_original_language INT REFERENCES d_language (id),
     original_title       TEXT NOT NULL,
     title                TEXT NOT NULL,
-    imdb_id              TEXT
+    imdb_id              TEXT NOT NULL,
+    tmdb_id		 TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS movie_genres

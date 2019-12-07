@@ -27,7 +27,8 @@ table = etl.selectne(table, 'id', '')
 table = etl.sub(table, 'id', ',', '')
 table = etl.cut(table, 'id', 'name')
 table = etl.convert(table, 'id', int)
-table = etl.distinct(table, 'id')
+table = etl.cut(table, 'name')
+table = etl.distinct(table, 'name')
 
 # LOAD
 etl.todb(table, cursor, 'd_studio')

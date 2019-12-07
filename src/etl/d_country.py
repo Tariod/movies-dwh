@@ -21,18 +21,11 @@ table = etl.cut(table, 'name', 'iso_3166_1')
 table = etl.sub(table, 'name', '[\'\]]', '')
 table = etl.sub(table, 'name', '(^[ ]+)|[ ]+$', '')
 table = etl.sub(table, 'iso_3166_1', '[\',]', '')
+table = etl.sub(table, 'iso_3166_1', '[\'\]]', '')
+table = etl.sub(table, 'iso_3166_1', '(^[ ]+)|[ ]+$', '')
 table = etl.selectnotnone(table, 'iso_3166_1')
 table = etl.sub(table, 'name', '"', '')
 table = etl.groupselectfirst(table, 'name')
-
-values = etl.data(table)
-valuesNew = []
-vals = list(range(1, etl.nrows(table) + 1))
-flat_list = [list(sublist) for sublist in values]
-table = [flat_list, vals]
-table = etl.fromcolumns(table)
-table = etl.unpack(table, 'f0', ['name', 'iso_3166_1'])
-table = etl.rename(table, 'f1', 'id')
 
 # LOAD
 etl.todb(table, cursor, 'd_country')

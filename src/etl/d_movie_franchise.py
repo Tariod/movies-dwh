@@ -21,6 +21,8 @@ table = etl.sub(table, 'id', '[\',]', '')
 table = etl.cut(table, 'id', 'name')
 table = etl.groupselectfirst(table, 'id')
 table = etl.selectnotnone(table, 'id')
+table = etl.sub(table, 'name', '(^[ ]+)|[ ]+$', '')
+table = etl.cut(table, 'name')
 
 # LOAD
 etl.todb(table, cursor, 'd_movie_franchise')

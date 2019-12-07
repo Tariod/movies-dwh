@@ -20,6 +20,8 @@ table = etl.sub(table, 'title', '\'', '')
 table = etl.cut(table, 'id', 'title')
 table = etl.selectnotnone(table, 'id')
 table = etl.groupselectfirst(table, key='title')
+table = etl.cut(table, 'title')
+table = etl.sub(table, 'title', '(^[ ]+)|[ ]+$', '')
 
 # LOAD
 etl.todb(table, cursor, 'd_genre')
