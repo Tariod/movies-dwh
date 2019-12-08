@@ -55,6 +55,10 @@ wait $d_character \
      $d_user
 
 echo "Stage 1/4"
+python3 src/etl/d_movie.py &
+d_movie=$!
+
+wait $d_movie
 
 echo "Stage 2/4"
 
