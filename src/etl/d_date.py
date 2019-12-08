@@ -25,15 +25,17 @@ table = etl.rename(table, 'release_date', 'date')
 table = etl.groupselectfirst(table, 'date')
 table = etl.search(table, 'date',
                    '[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])')
+table = etl.convert(table, 'date', lambda date: date + ' 00:00:00')
+
 dates = etl.cut(users, 'timestamp')
 dates = etl.convert(dates, 'timestamp',
-                    lambda v: datetime
-                    .fromtimestamp(float(v) / 1000)
-                    .strftime('%Y-%m-%d'))
-dates = etl.distinct(dates)
+                    lambda stamp: datetime
+                    .fromtimestamp(float(stamp) / 1000)
+                    .strftime('%Y-%m-%d %H:%M:%S'))
 dates = etl.rename(dates, 'timestamp', 'date')
-dates = etl.antijoin(dates, table, key='date')
+
+dates = etl.cat(dates, table)
+dates = etl.distinct(dates)
 
 # LOAD
-etl.todb(table, cursor, 'd_date')
-etl.appenddb(dates, cursor, 'd_date')
+etl.todb(dates, cursor, 'd_date')

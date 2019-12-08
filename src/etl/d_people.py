@@ -40,7 +40,7 @@ table = etl.sub(table, 'name', '(^[ ]+)|([ ]+$)', '')
 table = etl.convert(table, 'id', int)
 table = etl.distinct(table, 'id')
 table = etl.cut(table, 'name', 'id')
-table = etl.rename(table, 'id', 'id_tmdb')
+table = etl.rename(table, 'id', 'tmdb_id')
 
 crew = etl.cut(movies, 'crew')
 crew = etl.selectcontains(crew, 'crew', 'name')
@@ -66,9 +66,9 @@ crew = etl.sub(crew, 'name', '(^[ ]+)|([ ]+$)', '')
 crew = etl.convert(crew, 'id', int)
 crew = etl.distinct(crew, 'id')
 crew = etl.cut(crew, 'name', 'id')
-crew = etl.rename(crew, 'id', 'id_tmdb')
+crew = etl.rename(crew, 'id', 'tmdb_id')
 
-crew = etl.antijoin(crew, table, key='id_tmdb')
+crew = etl.antijoin(crew, table, key='tmdb_id')
 
 # LOAD
 etl.todb(table, cursor, 'd_people')

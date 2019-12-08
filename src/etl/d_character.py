@@ -1,6 +1,9 @@
+from dotenv import load_dotenv
 import os
 import petl as etl
 import psycopg2
+
+load_dotenv()
 
 conn = psycopg2.connect(dbname=os.getenv('DB_NAME'),
                         user=os.getenv('DB_USER'),

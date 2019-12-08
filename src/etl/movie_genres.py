@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from dotenv import load_dotenv
 import os
 import petl as etl
@@ -23,18 +24,18 @@ table = etl.splitdown(table, 'genres', '}')
 table = etl.selectcontains(table, 'genres', 'id')
 table = etl.split(table, 'genres', '\'name\':', ['id_genre', 'name'])
 table = etl.cut(table, 'id', 'name')
-table = etl.sub(table, 'name', '[,\'\]]', '')
+table = etl.sub(table, 'name', '[,\'\\]]', '')
 table = etl.sub(table, 'name', '(^[ ]+)|[ ]+$', '')
 
 movies = etl.fromdb(conn, 'SELECT * from d_movie')
 movies = etl.cut(movies, 'id', 'tmdb_id')
 movies = dict(etl.data(movies))
-movies_map = {movies[k] : k for k in movies}
+movies_map = {movies[k]: k for k in movies}
 
 genres = etl.fromdb(conn, 'SELECT * from d_genre')
 genres = etl.cut(genres, 'id', 'title')
 genres = dict(etl.data(genres))
-genres_map = {genres[k] : k for k in genres}
+genres_map = {genres[k]: k for k in genres}
 
 mappings = OrderedDict()
 mappings['id_movie'] = 'id', movies_map

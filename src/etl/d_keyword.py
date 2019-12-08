@@ -30,8 +30,7 @@ table = etl.rename(table, 'keyword', 'name')
 table = etl.selectne(table, 'name', None)
 table = etl.selectne(table, 'keyword_id', None)
 table = etl.rename(table, 'keyword_id', 'id')
-table = etl.convert(table, 'id', int)
-table = etl.distinct(table, 'id')
+table = etl.distinct(table, 'name')
 table = etl.cut(table, 'name')
 
 # LOAD

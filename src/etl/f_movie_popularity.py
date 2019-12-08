@@ -30,9 +30,9 @@ reviews = etl.join(movies, reviews, key='movieId')
 reviews = etl.cut(reviews, 'movieId', 'userId', 'rating', 'timestamp',
                   'revenue', 'runtime', 'popularity', 'budget', 'status')
 reviews = etl.convert(reviews, 'timestamp',
-                      lambda v: datetime
-                      .fromtimestamp(float(v) / 1000)
-                      .strftime('%Y-%m-%d'))
+                      lambda stamp: datetime
+                      .fromtimestamp(float(stamp) / 1000)
+                      .strftime('%Y-%m-%d %H:%M:%S'))
 
 timestamps = etl.fromdb(conn, 'SELECT * from d_date')
 timestamps = etl.cut(timestamps, 'id', 'date')
