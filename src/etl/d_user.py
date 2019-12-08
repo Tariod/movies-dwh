@@ -15,16 +15,14 @@ cursor = conn.cursor()
 # GET USER FUNCTION (table: d_user)
 # EXTRACT
 DATA_SOURCE_DIR = os.getenv('DATA_SOURCE_DIR')
-movies = etl.fromcsv(DATA_SOURCE_DIR + 'ratings.csv', encoding='utf8')
+ratings = etl.fromcsv(DATA_SOURCE_DIR + 'ratings.csv', encoding='utf8')
 
 # TRANSFORMATION
-userids = list(range(1, 10657))
-vals = list('u' + str(x) for x in range(1, 10657))
-
-table = [userids, vals]
-table = etl.fromcolumns(table)
-table = etl.rename(table, 'f0', 'id')
-table = etl.rename(table, 'f1', 'abstract_name')
+table = etl.cut(ratings, 'userId')
+table = etl.convert(table, 'userId', str)
+table = etl.selectnotnone(table, 'userId')
+table = etl.distinct(table, 'userId')
+table = etl.rename(table, 'userId', 'abstract_name')
 
 # LOAD
 etl.todb(table, cursor, 'd_user')
