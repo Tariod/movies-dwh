@@ -31,13 +31,24 @@ table = etl.sub(table, 'name', '[,\']', '')
 table = etl.convert(table, 'name', str)
 table = etl.sub(table, 'name', '(^[ ]+)|[ ]+$', '')
 table = etl.sub(table, 'name', '"', '')
+table = etl.selectne(table, 'name', '')
 table = etl.sub(table, 'id_gender', '[ ,\']', '')
 table = etl.sub(table, 'id_gender', ' ', '')
-table = etl.selectne(table, 'id_gender', None)
 table = etl.convert(table, 'id_gender', int)
-table = etl.convert(table, 'id_gender', lambda value: value + 1)
-table = etl.selectne(table, 'name', '')
-table = etl.groupselectfirst(table, 'name')
+table = etl.selectnotnone(table, 'id_gender')
+table = etl.distinct(table)
+
+source_genders = [['id_gender', 'gender'],
+                  [0, 'Unspecified'],
+                  [1, 'Female'],
+                  [2, 'Male']]
+table = etl.join(table, source_genders, 'id_gender')
+table = etl.cutout(table, 'id_gender')
+
+gender = etl.fromdb(conn, 'SELECT * from d_gender')
+gender = etl.rename(gender, {'id': 'id_gender', 'name': 'gender'})
+table = etl.join(table, gender, 'gender')
+table = etl.cutout(table, 'gender')
 
 # LOAD
 etl.todb(table, cursor, 'd_character')
