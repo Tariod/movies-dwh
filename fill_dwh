@@ -1,0 +1,63 @@
+#!/bin/bash
+
+echo "Stage 0/4"
+python3 src/etl/d_character.py &
+d_character=$!
+
+python3 src/etl/d_country.py &
+d_country=$!
+
+python3 src/etl/d_date.py &
+d_date=$!
+
+python3 src/etl/d_department.py &
+d_department=$!
+
+python3 src/etl/d_genre.py &
+d_genre=$!
+
+python3 src/etl/d_job.py &
+d_job=$!
+
+python3 src/etl/d_keyword.py &
+d_keyword=$!
+
+python3 src/etl/d_language.py &
+d_language=$!
+
+python3 src/etl/d_movie_franchise.py &
+d_movie_franchise=$!
+
+python3 src/etl/d_people.py &
+d_people=$!
+
+python3 src/etl/d_release_status.py &
+d_release_status=$!
+
+python3 src/etl/d_studio.py &
+d_studio=$!
+
+python3 src/etl/d_user.py &
+d_user=$!
+
+wait $d_character \
+     $d_country \
+     $d_date \
+     $d_department \
+     $d_genre \
+     $d_job \
+     $d_keyword \
+     $d_language \
+     $d_movie_franchise \
+     $d_people \
+     $d_release_status \
+     $d_studio \
+     $d_user
+
+echo "Stage 1/4"
+
+echo "Stage 2/4"
+
+echo "Stage 3/4"
+
+echo "Stage 4/4"
