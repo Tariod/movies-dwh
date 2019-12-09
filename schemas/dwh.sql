@@ -192,8 +192,8 @@ CREATE TABLE IF NOT EXISTS f_movie_popularity
     id_release_status INT REFERENCES d_release_status (id),
     id_user           INT REFERENCES d_user (id),
     f_rating          REAL CHECK (f_rating IS NULL OR (f_rating >= 0 AND f_rating <= 5)),
-    f_budget          INT CHECK (f_budget IS NULL OR f_budget >= 0),
-    f_revenue         INT,
+    f_budget          BIGINT CHECK (f_budget IS NULL OR f_budget >= 0),
+    f_revenue         BIGINT,
     f_runtime         REAL CHECK (f_runtime IS NULL OR f_runtime >= 0),
     f_popularity      REAL
 );

@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from dotenv import load_dotenv
 import os
 import petl as etl
@@ -27,9 +26,9 @@ table = etl.cut(table, 'id', 'info')
 table = etl.split(table, 'info', '\'job\':', ['department', 'job'])
 table = etl.split(table, 'job', '\'name\':', ['job', 'trash'])
 table = etl.cut(table, 'id', 'department', 'job')
-table = etl.split(table, 'department', '\'id\':', ['department', 'id_people'])
+table = etl.split(table, 'department', '\'id\':', ['department', 'tmdb_id'])
 table = etl.split(table, 'department', '\'gender\':', ['department', 'trash'])
-table = etl.cut(table, 'id', 'department', 'job', 'id_people')
+table = etl.cut(table, 'id', 'department', 'job', 'tmdb_id')
 table = etl.sub(table, 'department', '[,\']', '')
 table = etl.convert(table, 'department', str)
 table = etl.sub(table, 'department', '(^[ ]+)|[ ]+$', '')
@@ -40,41 +39,34 @@ table = etl.convert(table, 'job', str)
 table = etl.sub(table, 'job', '(^[ ]+)|[ ]+$', '')
 table = etl.sub(table, 'job', '"', '')
 table = etl.selectne(table, 'job', '')
-table = etl.sub(table, 'id_people', '[ ,\']', '')
-table = etl.sub(table, 'id_people', ' ', '')
-table = etl.selectne(table, 'id_people', None)
-table = etl.convert(table, 'id_people', int)
+table = etl.sub(table, 'tmdb_id', '[ ,\']', '')
+table = etl.sub(table, 'tmdb_id', ' ', '')
+table = etl.selectnotnone(table, 'tmdb_id')
 table = etl.sub(table, 'id', '[ ,\']', '')
 table = etl.sub(table, 'id', ' ', '')
-table = etl.selectne(table, 'id', None)
+table = etl.selectnotnone(table, 'id')
 
 departments = etl.fromdb(conn, 'SELECT * from d_department')
-departments = dict(etl.data(departments))
-departments_map = {departments[k]: k for k in departments}
+departments = etl.rename(departments, 'id', 'id_department')
+table = etl.join(table, departments, lkey='department', rkey='name')
+table = etl.cutout(table, 'department')
 
 jobs = etl.fromdb(conn, 'SELECT * from d_job')
-jobs = dict(etl.data(jobs))
-jobs_map = {jobs[k]: k for k in jobs}
+jobs = etl.rename(jobs, 'id', 'id_job')
+table = etl.join(table, jobs, lkey='job', rkey='name')
+table = etl.cutout(table, 'job')
 
-movies = etl.fromdb(conn, 'SELECT * from d_movie')
-movies = etl.cut(movies, 'id', 'tmdb_id')
-movies = dict(etl.data(movies))
-movies_map = {movies[k]: k for k in movies}
+movies = etl.fromdb(conn, 'SELECT id, tmdb_id from d_movie')
+movies = etl.rename(movies, 'id', 'id_movie')
+table = etl.join(table, movies, lkey='id', rkey='tmdb_id')
+table = etl.cutout(table, 'id')
 
-people = etl.fromdb(conn, 'SELECT * from d_people')
-people = etl.cut(people, 'id', 'name')
-people = dict(etl.data(people))
-people_map = {people[k]: k for k in people}
+people = etl.fromdb(conn, 'SELECT id, tmdb_id from d_people')
+people = etl.rename(people, 'id', 'id_people')
+table = etl.join(table, people, key='tmdb_id')
+table = etl.cutout(table, 'tmdb_id')
 
-mappings = OrderedDict()
-mappings['id_movie'] = 'id', movies_map
-mappings['id_department'] = 'department', departments_map
-mappings['id_job'] = 'job', jobs_map
-mappings['id_people'] = 'id_people', people_map
-table = etl.fieldmap(table, mappings)
-
-table = etl.convert(table, 'id_movie', str)
-table = etl.select(table, lambda rec: '-' not in rec.id_movie)
+table = etl.convert(table, 'id_movie', int)
 
 # LOAD
 etl.todb(table, cursor, 'd_crew')

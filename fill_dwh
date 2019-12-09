@@ -61,7 +61,39 @@ d_movie=$!
 wait $d_movie
 
 echo "Stage 2/4"
+python3 src/etl/d_cast.py &
+d_cast=$!
+
+python3 src/etl/d_crew.py &
+d_crew=$!
+
+python3 src/etl/movie_genres.py &
+movie_genres=$!
+
+python3 src/etl/movie_keywords.py &
+movie_keywords=$!
+
+python3 src/etl/production_countries.py &
+production_countries=$!
+
+python3 src/etl/production_studios.py &
+production_studios=$!
+
+python3 src/etl/spoken_languages.py &
+spoken_languages=$!
+
+wait $d_cast \
+     $d_crew \
+     $movie_genres \
+     $movie_keywords \
+     $production_countries \
+     $production_studios \
+     $spoken_languages
 
 echo "Stage 3/4"
+python3 src/etl/f_movies_popularity.py &
+f_movies_popularity=$!
+
+wait $f_movies_popularity
 
 echo "Stage 4/4"

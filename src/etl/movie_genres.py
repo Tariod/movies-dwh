@@ -1,5 +1,5 @@
-from collections import OrderedDict
 from dotenv import load_dotenv
+import json
 import os
 import petl as etl
 import psycopg2
@@ -20,30 +20,25 @@ movies = etl.fromcsv(DATA_SOURCE_DIR + 'movies_metadata.csv', encoding='utf8')
 
 # TRANSFORMATION
 table = etl.cut(movies, 'id', 'genres')
-table = etl.splitdown(table, 'genres', '}')
-table = etl.selectcontains(table, 'genres', 'id')
-table = etl.split(table, 'genres', '\'name\':', ['id_genre', 'name'])
-table = etl.cut(table, 'id', 'name')
-table = etl.sub(table, 'name', '[,\'\\]]', '')
-table = etl.sub(table, 'name', '(^[ ]+)|[ ]+$', '')
+table = etl.rename(table, 'id', 'movie_tmdb_id')
+table = etl.sub(table, 'genres', '^\\[', '')
+table = etl.sub(table, 'genres', '\\]$', '')
+table = etl.selectnotnone(table, 'genres')
+table = etl.splitdown(table, 'genres', '(?<=\\}),\\s(?=\\{)')
+table = etl.sub(table, 'genres', '\'', '"')
+table = etl.convert(table, 'genres', lambda row: json.loads(row))
+table = etl.unpackdict(table, 'genres')
+table = etl.cutout(table, 'id')
 
-movies = etl.fromdb(conn, 'SELECT * from d_movie')
-movies = etl.cut(movies, 'id', 'tmdb_id')
-movies = dict(etl.data(movies))
-movies_map = {movies[k]: k for k in movies}
+movies = etl.fromdb(conn, 'SELECT id, tmdb_id from d_movie')
+movies = etl.rename(movies, 'id', 'id_movie')
+table = etl.join(table, movies, lkey='movie_tmdb_id', rkey='tmdb_id')
+table = etl.cutout(table, 'movie_tmdb_id')
 
 genres = etl.fromdb(conn, 'SELECT * from d_genre')
-genres = etl.cut(genres, 'id', 'title')
-genres = dict(etl.data(genres))
-genres_map = {genres[k]: k for k in genres}
-
-mappings = OrderedDict()
-mappings['id_movie'] = 'id', movies_map
-mappings['id_genre'] = 'name', genres_map
-table = etl.fieldmap(table, mappings)
-
-table = etl.convert(table, 'id_movie', str)
-table = etl.select(table, lambda rec: '-' not in rec.id_movie)
+genres = etl.rename(genres, 'id', 'id_genre')
+table = etl.join(table, genres, lkey='name', rkey='title')
+table = etl.cutout(table, 'name')
 
 # LOAD
 etl.todb(table, cursor, 'movie_genres')
