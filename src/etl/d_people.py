@@ -1,14 +1,21 @@
+from dotenv import load_dotenv
+import os
 import petl as etl
-import csv
 import psycopg2
 
-conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
-conn = psycopg2.connect(conn_string)
+load_dotenv()
+
+conn = psycopg2.connect(dbname=os.getenv('DB_NAME'),
+                        user=os.getenv('DB_USER'),
+                        password=os.getenv('DB_PASSWORD'),
+                        host=os.getenv('DB_HOST'),
+                        port=os.getenv('DB_PORT'))
 cursor = conn.cursor()
 
 # GET PEOPLE FUNCTION (table: d_people)
 # EXTRACT
-movies = etl.fromcsv('dataset/credits.csv', encoding='utf8')
+DATA_SOURCE_DIR = os.getenv('DATA_SOURCE_DIR')
+movies = etl.fromcsv(DATA_SOURCE_DIR + 'credits.csv', encoding='utf8')
 
 # TRANSFORMATION
 table = etl.cut(movies, 'cast')
@@ -33,7 +40,7 @@ table = etl.sub(table, 'name', '(^[ ]+)|([ ]+$)', '')
 table = etl.convert(table, 'id', int)
 table = etl.distinct(table, 'id')
 table = etl.cut(table, 'name', 'id')
-table = etl.rename(table, 'id', 'id_tmdb')
+table = etl.rename(table, 'id', 'tmdb_id')
 
 crew = etl.cut(movies, 'crew')
 crew = etl.selectcontains(crew, 'crew', 'name')
@@ -59,9 +66,10 @@ crew = etl.sub(crew, 'name', '(^[ ]+)|([ ]+$)', '')
 crew = etl.convert(crew, 'id', int)
 crew = etl.distinct(crew, 'id')
 crew = etl.cut(crew, 'name', 'id')
-crew = etl.rename(crew, 'id', 'id_tmdb')
+crew = etl.rename(crew, 'id', 'tmdb_id')
 
-crew = etl.antijoin(crew, table, key='id_tmdb')
+crew = etl.antijoin(crew, table, key='tmdb_id')
+
 # LOAD
 etl.todb(table, cursor, 'd_people')
 etl.appenddb(crew, cursor, 'd_people')

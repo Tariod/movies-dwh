@@ -1,49 +1,44 @@
+from dotenv import load_dotenv
+import json
+import os
 import petl as etl
-import csv
 import psycopg2
-from collections import OrderedDict
 
-conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
-conn = psycopg2.connect(conn_string)
+load_dotenv()
+
+conn = psycopg2.connect(dbname=os.getenv('DB_NAME'),
+                        user=os.getenv('DB_USER'),
+                        password=os.getenv('DB_PASSWORD'),
+                        host=os.getenv('DB_HOST'),
+                        port=os.getenv('DB_PORT'))
 cursor = conn.cursor()
 
 # GET CAST FUNCTION (table: d_cast)
 # EXTRACT
-movies = etl.fromcsv('dataset/movies_metadata.csv', encoding='utf8')
+DATA_SOURCE_DIR = os.getenv('DATA_SOURCE_DIR')
+movies = etl.fromcsv(DATA_SOURCE_DIR + 'movies_metadata.csv', encoding='utf8')
 
 # TRANSFORMATION
 table = etl.cut(movies, 'id', 'production_companies')
-table = etl.convert(table, 'production_companies', str)
-table = etl.selectcontains(table, 'production_companies', 'id')
-table = etl.splitdown(table, 'production_companies', '}')
-table = etl.split(table, 'production_companies', '\'id\':', ['studio', 'trash'])
-table = etl.cut(table, 'id', 'studio')
-table = etl.split(table, 'studio', '\'name\':', ['trash', 'studio'])
-table = etl.cut(table, 'id', 'studio')
-table = etl.sub(table, 'studio', '[",\'\[\]]', '')
-table = etl.sub(table, 'studio', '(^[ ]+)|[ ]+$', '')
-table = etl.sub(table, 'id', '[ ,\']', '')
-table = etl.sub(table, 'id', ' ', '')
-table = etl.selectne(table, 'id', None)
-table = etl.selectne(table, 'studio', None)
+table = etl.rename(table, 'id', 'movie_tmdb_id')
+table = etl.sub(table, 'production_companies', '^\\[', '')
+table = etl.sub(table, 'production_companies', '\\]$', '')
+table = etl.selectnotnone(table, 'production_companies')
+table = etl.splitdown(table, 'production_companies', '(?<=\\}),\\s(?=\\{)')
+table = etl.sub(table, 'production_companies', '\'', '"')
+table = etl.convert(table, 'production_companies', lambda row: json.loads(row))
+table = etl.unpackdict(table, 'production_companies')
+table = etl.cutout(table, 'id')
 
-movies = etl.fromdb(conn, 'SELECT * from d_movie')
-movies = etl.cut(movies, 'id', 'tmdb_id')
-movies = dict(etl.data(movies))
-movies_map = {movies[k] : k for k in movies}
+movies = etl.fromdb(conn, 'SELECT id, tmdb_id from d_movie')
+movies = etl.rename(movies, 'id', 'id_movie')
+table = etl.join(table, movies, lkey='movie_tmdb_id', rkey='tmdb_id')
+table = etl.cutout(table, 'movie_tmdb_id')
 
 studios = etl.fromdb(conn, 'SELECT * from d_studio')
-studios = etl.cut(studios, 'id', 'name')
-studios = dict(etl.data(studios))
-studios_map = {studios[k] : k for k in studios}
+studios = etl.rename(studios, 'id', 'id_studio')
+table = etl.join(table, studios, key='name')
+table = etl.cutout(table, 'name')
 
-mappings = OrderedDict()
-mappings['id_movie'] = 'id', movies_map
-mappings['id_studio'] = 'studio', studios_map
-table = etl.fieldmap(table, mappings)
-
-table = etl.convert(table, 'id_movie', str)
-table = etl.select(table, lambda rec: '-' not in rec.id_movie)
-
-# LOAD
+# # LOAD
 etl.todb(table, cursor, 'production_studios')

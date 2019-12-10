@@ -1,44 +1,45 @@
+from dotenv import load_dotenv
+import json
+import os
 import petl as etl
-import csv
 import psycopg2
-from collections import OrderedDict
 
-conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
-conn = psycopg2.connect(conn_string)
+load_dotenv()
+
+conn = psycopg2.connect(dbname=os.getenv('DB_NAME'),
+                        user=os.getenv('DB_USER'),
+                        password=os.getenv('DB_PASSWORD'),
+                        host=os.getenv('DB_HOST'),
+                        port=os.getenv('DB_PORT'))
 cursor = conn.cursor()
+
 
 # GET CAST FUNCTION (table: d_cast)
 # EXTRACT
-movies = etl.fromcsv('dataset/movies_metadata.csv', encoding='utf8')
+DATA_SOURCE_DIR = os.getenv('DATA_SOURCE_DIR')
+movies = etl.fromcsv(DATA_SOURCE_DIR + 'movies_metadata.csv', encoding='utf8')
 
 # TRANSFORMATION
 table = etl.cut(movies, 'id', 'production_countries')
-table = etl.convert(table, 'production_countries', str)
-table = etl.selectcontains(table, 'production_countries', 'name')
-table = etl.splitdown(table, 'production_countries', '}')
-table = etl.split(table, 'production_countries', '\'name\':', ['trash', 'id_studio'])
-table = etl.cut(table, 'id', 'id_studio')
-table = etl.sub(table, 'id_studio', '[\'",]', '')
-table = etl.sub(table, 'id_studio', '(^[ ]+)|[ ]+$', '')
-table = etl.selectne(table, 'id_studio', None)
-table = etl.convert(table, 'id_studio', str)
-table = etl.sub(table, 'id', '[ ,\']', '')
-table = etl.sub(table, 'id', ' ', '')
-table = etl.selectne(table, 'id', None)
+table = etl.rename(table, 'id', 'movie_tmdb_id')
+table = etl.sub(table, 'production_countries', '^\\[', '')
+table = etl.sub(table, 'production_countries', '\\]$', '')
+table = etl.selectnotnone(table, 'production_countries')
+table = etl.splitdown(table, 'production_countries', '(?<=\\}),\\s(?=\\{)')
+table = etl.sub(table, 'production_countries', '\'', '"')
+table = etl.convert(table, 'production_countries', lambda row: json.loads(row))
+table = etl.unpackdict(table, 'production_countries')
+table = etl.cutout(table, 'name')
 
-characters = etl.fromdb(conn, 'SELECT * from d_country')
-characters = dict(etl.data(etl.cut(characters, 'id', 'name')))
-characters_map = {characters[k] : k for k in characters}
+movies = etl.fromdb(conn, 'SELECT id, tmdb_id from d_movie')
+movies = etl.rename(movies, 'id', 'id_movie')
+table = etl.join(table, movies, lkey='movie_tmdb_id', rkey='tmdb_id')
+table = etl.cutout(table, 'movie_tmdb_id')
 
-movies = etl.fromdb(conn, 'SELECT * from d_movie')
-movies = etl.cut(movies, 'id', 'tmdb_id')
-movies = dict(etl.data(movies))
-movies_map = {movies[k] : k for k in movies}
-
-mappings = OrderedDict()
-mappings['id_movie'] = 'id', movies_map
-mappings['id_country'] = 'id_studio', characters_map
-table = etl.fieldmap(table, mappings)
+countries = etl.fromdb(conn, 'SELECT id, iso_3166_1 from d_country')
+countries = etl.rename(countries, 'id', 'id_country')
+table = etl.join(table, countries, key='iso_3166_1')
+table = etl.cutout(table, 'iso_3166_1')
 
 # LOAD
 etl.todb(table, cursor, 'production_countries')

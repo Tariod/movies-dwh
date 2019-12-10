@@ -1,59 +1,92 @@
-import petl as etl
-import csv
-import psycopg2
-from ftfy import fix_encoding
-from collections import OrderedDict
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+import petl as etl
+import psycopg2
 
-conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
-conn = psycopg2.connect(conn_string)
+load_dotenv()
+
+conn = psycopg2.connect(dbname=os.getenv('DB_NAME'),
+                        user=os.getenv('DB_USER'),
+                        password=os.getenv('DB_PASSWORD'),
+                        host=os.getenv('DB_HOST'),
+                        port=os.getenv('DB_PORT'))
 cursor = conn.cursor()
 
 # GET COUNTRYFUNCTION (table: d_country)
 # EXTRACT
-movies = etl.fromcsv('dataset/movies_metadata.csv', encoding='utf8', errors='ignore')
-reviews = etl.fromcsv('dataset/ratings.csv', encoding='utf8')
+DATA_SOURCE_DIR = os.getenv('DATA_SOURCE_DIR')
+movies_data = etl.fromcsv(DATA_SOURCE_DIR + 'movies_metadata.csv',
+                          encoding='utf8',
+                          errors='ignore')
+reviews = etl.fromcsv(DATA_SOURCE_DIR + 'ratings.csv', encoding='utf8')
+links = etl.fromcsv(DATA_SOURCE_DIR + 'links.csv', encoding='utf8')
 
 # TRANSFORMATION
-movies = etl.rename(movies, 'id', 'movieId')
-movies = etl.convert(movies, 'movieId', int)
-reviews = etl.convert(reviews, 'movieId', int)
-reviews = etl.join(movies, reviews, key='movieId')
-reviews = etl.cut(reviews, 'movieId', 'userId', 'rating', 'timestamp', 'revenue', 'runtime', 'popularity', 'budget', 'status')
-reviews = etl.convert(reviews, 'timestamp', lambda v: datetime.fromtimestamp(float(v)/1000).strftime("%Y-%m-%d"))
+reviews = etl.rename(reviews,
+                     {'userId': 'abstract_name',
+                      'rating': 'f_rating',
+                      'timestamp': 'date'})
+reviews = etl.selectnotnone(reviews, 'abstract_name')
+reviews = etl.selectnotnone(reviews, 'movieId')
+reviews = etl.convert(reviews, 'f_rating', float)
+reviews = etl.convert(reviews, 'date',
+                      lambda stamp: datetime
+                      .fromtimestamp(float(stamp) / 1000)
+                      .strftime('%Y-%m-%d %H:%M:%S'))
 
-timestamps = etl.fromdb(conn, 'SELECT * from d_date')
-timestamps = etl.cut(timestamps, 'id', 'date')
-timestamps = etl.convert(timestamps, 'date', lambda v: v.strftime("%Y-%m-%d"))
-timestamps = dict(timestamps)
-timestamps_map = {timestamps[k] : k for k in timestamps}
+users = etl.fromdb(conn, 'SELECT * from d_user')
+users = etl.rename(users, 'id', 'id_user')
+reviews = etl.join(reviews, users, key='abstract_name')
+reviews = etl.cutout(reviews, 'abstract_name')
 
-movies = etl.fromdb(conn, 'SELECT * from d_movie')
-movies = etl.cut(movies, 'id', 'tmdb_id')
-movies = dict(etl.data(movies))
-movies_map = {movies[k] : k for k in movies}
+links = etl.cut(links, 'movieId', 'tmdbId')
+reviews = etl.join(reviews, links, key='movieId')
+reviews = etl.cutout(reviews, 'movieId')
+reviews = etl.rename(reviews, 'tmdbId',  'movie_tmdb_id')
 
-statuses = etl.fromdb(conn, 'SELECT * from d_release_status')
-statuses = dict(etl.data(etl.cut(statuses, 'id', 'name')))
-statuses_map = {statuses[k] : k for k in statuses}
+movies_data = etl.cut(movies_data,
+                      'release_date',
+                      'id',
+                      'status',
+                      'budget',
+                      'revenue',
+                      'runtime',
+                      'popularity')
+movies_data = etl.rename(movies_data,
+                         {'release_date': 'date',
+                          'id': 'movie_tmdb_id',
+                          'budget': 'f_budget',
+                          'revenue': 'f_revenue',
+                          'runtime': 'f_runtime',
+                          'popularity': 'f_popularity'})
+movies_data = etl.selectnotnone(movies_data, 'movie_tmdb_id')
+movies_data = etl.search(movies_data, 'date',
+                         '[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])')
+movies_data = etl.convert(movies_data, 'date', lambda date: date + ' 00:00:00')
+movies_data = etl.convert(movies_data, 'f_budget', int)
+movies_data = etl.convert(movies_data, 'f_revenue', int)
+movies_data = etl.convert(movies_data, 'f_runtime', float)
+movies_data = etl.convert(movies_data, 'f_popularity', float)
 
-mappings = OrderedDict()
-mappings['id_date'] = 'timestamp', timestamps_map
-mappings['id_movie'] = 'movieId', movies_map
-mappings['id_release_status'] = 'status', statuses_map
-mappings['id_user'] = 'userId'
-mappings['f_rating'] = 'rating'
-mappings['f_budget'] = 'budget'
-mappings['f_revenue'] = 'revenue'
-mappings['f_runtime'] = 'runtime'
-mappings['f_popularity'] = 'popularity'
-table = etl.fieldmap(reviews, mappings)
-table = etl.replace(table, 'id_release_status', '', 1)
-table = etl.replace(table, 'f_runtime', '', None)
+release_status = etl.fromdb(conn, 'SELECT * from d_release_status')
+release_status = etl.rename(release_status, 'id', 'id_release_status')
+movies_data = etl.join(movies_data, release_status, lkey='status', rkey='name')
+movies_data = etl.cutout(movies_data, 'status')
 
-table = etl.convert(table, 'id_movie', str)
-table = etl.select(table, lambda rec: '-' not in rec.id_movie)
+table = etl.cat(movies_data, reviews)
 
+dates = etl.fromdb(conn, 'SELECT id, date from d_date')
+dates = etl.rename(dates, 'id', 'id_date')
+dates = etl.convert(dates, 'date', str)
+table = etl.join(table, dates, key='date')
+table = etl.cutout(table, 'date')
+
+movies = etl.fromdb(conn, 'SELECT id, tmdb_id from d_movie')
+movies = etl.rename(movies, 'id', 'id_movie')
+table = etl.convert(table, 'movie_tmdb_id', str)
+table = etl.join(table, movies, lkey='movie_tmdb_id', rkey='tmdb_id')
+table = etl.cutout(table, 'movie_tmdb_id')
 
 # LOAD
 etl.todb(table, cursor, 'f_movie_popularity')

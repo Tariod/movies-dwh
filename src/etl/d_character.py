@@ -1,14 +1,21 @@
+from dotenv import load_dotenv
+import os
 import petl as etl
-import csv
 import psycopg2
 
-conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
-conn = psycopg2.connect(conn_string)
+load_dotenv()
+
+conn = psycopg2.connect(dbname=os.getenv('DB_NAME'),
+                        user=os.getenv('DB_USER'),
+                        password=os.getenv('DB_PASSWORD'),
+                        host=os.getenv('DB_HOST'),
+                        port=os.getenv('DB_PORT'))
 cursor = conn.cursor()
 
 # GET CHARACTER FUNCTION (table: d_character)
 # EXTRACT
-movies = etl.fromcsv('dataset/credits.csv', encoding='utf8')
+DATA_SOURCE_DIR = os.getenv('DATA_SOURCE_DIR')
+movies = etl.fromcsv(DATA_SOURCE_DIR + 'credits.csv', encoding='utf8')
 
 # TRANSFORMATION
 table = etl.cut(movies, 'cast')
@@ -24,13 +31,24 @@ table = etl.sub(table, 'name', '[,\']', '')
 table = etl.convert(table, 'name', str)
 table = etl.sub(table, 'name', '(^[ ]+)|[ ]+$', '')
 table = etl.sub(table, 'name', '"', '')
+table = etl.selectne(table, 'name', '')
 table = etl.sub(table, 'id_gender', '[ ,\']', '')
 table = etl.sub(table, 'id_gender', ' ', '')
-table = etl.selectne(table, 'id_gender', None)
 table = etl.convert(table, 'id_gender', int)
-table = etl.convert(table, 'id_gender', lambda value: value + 1)
-table = etl.selectne(table, 'name', '')
-table = etl.groupselectfirst(table, 'name')
+table = etl.selectnotnone(table, 'id_gender')
+table = etl.distinct(table)
+
+source_genders = [['id_gender', 'gender'],
+                  [0, 'Unspecified'],
+                  [1, 'Female'],
+                  [2, 'Male']]
+table = etl.join(table, source_genders, 'id_gender')
+table = etl.cutout(table, 'id_gender')
+
+gender = etl.fromdb(conn, 'SELECT * from d_gender')
+gender = etl.rename(gender, {'id': 'id_gender', 'name': 'gender'})
+table = etl.join(table, gender, 'gender')
+table = etl.cutout(table, 'gender')
 
 # LOAD
 etl.todb(table, cursor, 'd_character')

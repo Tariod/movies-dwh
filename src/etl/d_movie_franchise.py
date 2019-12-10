@@ -1,18 +1,26 @@
+from dotenv import load_dotenv
+import os
 import petl as etl
-import csv
 import psycopg2
 
-conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
-conn = psycopg2.connect(conn_string)
+load_dotenv()
+
+conn = psycopg2.connect(dbname=os.getenv('DB_NAME'),
+                        user=os.getenv('DB_USER'),
+                        password=os.getenv('DB_PASSWORD'),
+                        host=os.getenv('DB_HOST'),
+                        port=os.getenv('DB_PORT'))
 cursor = conn.cursor()
 
 # GET MOVIE_FRANCHISE FUNCTION (table: d_movie_franchise)
 # EXTRACT
-movies = etl.fromcsv('dataset/movies_metadata.csv', encoding='utf8')
+DATA_SOURCE_DIR = os.getenv('DATA_SOURCE_DIR')
+movies = etl.fromcsv(DATA_SOURCE_DIR + 'movies_metadata.csv', encoding='utf8')
 
 # TRANSFORMATION
 table = etl.cut(movies, 'belongs_to_collection')
-table = etl.split(table, 'belongs_to_collection', 'poster_path', ['info', 'trash'])
+table = etl.split(table, 'belongs_to_collection', 'poster_path',
+                  ['info', 'trash'])
 table = etl.cut(table, 'info')
 table = etl.split(table, 'info', '\'name\':', ['id', 'name'])
 table = etl.split(table, 'id', ':', ['trash', 'id'])

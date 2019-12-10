@@ -1,19 +1,27 @@
+from dotenv import load_dotenv
+import os
 import petl as etl
-import csv
 import psycopg2
-from ftfy import fix_encoding
 
-conn_string = "dbname='movies_dwh' user='postgres' password='postgres'"
-conn = psycopg2.connect(conn_string)
+load_dotenv()
+
+conn = psycopg2.connect(dbname=os.getenv('DB_NAME'),
+                        user=os.getenv('DB_USER'),
+                        password=os.getenv('DB_PASSWORD'),
+                        host=os.getenv('DB_HOST'),
+                        port=os.getenv('DB_PORT'))
 cursor = conn.cursor()
 
 # GET STUDIO FUNCTION (table: d_studio)
 # EXTRACT
-movies = etl.fromcsv('dataset/movies_metadata.csv', encoding='utf8', errors='ignore')
+DATA_SOURCE_DIR = os.getenv('DATA_SOURCE_DIR')
+movies = etl.fromcsv(DATA_SOURCE_DIR + 'movies_metadata.csv',
+                     encoding='utf8',
+                     errors='ignore')
 
 # TRANSFORMATION
 table = etl.cut(movies, 'production_companies')
-table = etl.sub(table, 'production_companies', '[\[\]]', '')
+table = etl.sub(table, 'production_companies', '[\\[\\]]', '')
 table = etl.convert(table, 'production_companies', str)
 table = etl.selectcontains(table, 'production_companies', 'name')
 table = etl.splitdown(table, 'production_companies', '{')
