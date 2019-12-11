@@ -30,11 +30,12 @@ table = etl.convert(table, 'date', lambda date: date + ' 00:00:00')
 dates = etl.cut(users, 'timestamp')
 dates = etl.convert(dates, 'timestamp',
                     lambda stamp: datetime
-                    .fromtimestamp(float(stamp) / 1000)
+                    .fromtimestamp(stamp)
                     .strftime('%Y-%m-%d %H:%M:%S'))
 dates = etl.rename(dates, 'timestamp', 'date')
 
 dates = etl.cat(dates, table)
+dates = etl.selectnotnone(dates, 'date')
 dates = etl.distinct(dates)
 
 # LOAD

@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS d_movie
     original_title       TEXT NOT NULL,
     title                TEXT NOT NULL,
     imdb_id              TEXT NOT NULL UNIQUE,
-    tmdb_id		         TEXT NOT NULL UNIQUE
+    tmdb_id              TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS movie_genres
@@ -136,14 +136,14 @@ CREATE TABLE IF NOT EXISTS d_character
     id        SERIAL PRIMARY KEY,
     id_gender INT REFERENCES d_gender (id),
     name      TEXT NOT NULL,
-    UNIQUE(id_gender, name)
+    UNIQUE (id_gender, name)
 );
 
 CREATE TABLE IF NOT EXISTS d_people
 (
-    id        SERIAL PRIMARY KEY,
-    name      TEXT NOT NULL,
-    tmdb_id	  TEXT NOT NULL UNIQUE
+    id      SERIAL PRIMARY KEY,
+    name    TEXT NOT NULL,
+    tmdb_id TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS d_department

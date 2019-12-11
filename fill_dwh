@@ -1,5 +1,6 @@
 #!/bin/bash
 
+date -u
 echo "Stage 0/4"
 python3 src/etl/d_character.py &
 d_character=$!
@@ -91,9 +92,10 @@ wait $d_cast \
      $spoken_languages
 
 echo "Stage 3/4"
-python3 src/etl/f_movies_popularity.py &
-f_movies_popularity=$!
+python3 src/etl/f_movie_popularity.py &
+f_movie_popularity=$!
 
-wait $f_movies_popularity
+wait $f_movie_popularity
 
 echo "Stage 4/4"
+date -u
