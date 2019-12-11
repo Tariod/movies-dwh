@@ -32,7 +32,7 @@ reviews = etl.selectnotnone(reviews, 'movieId')
 reviews = etl.convert(reviews, 'f_rating', float)
 reviews = etl.convert(reviews, 'date',
                       lambda stamp: datetime
-                      .fromtimestamp(float(stamp) / 1000)
+                      .fromtimestamp(float(stamp))
                       .strftime('%Y-%m-%d %H:%M:%S'))
 
 users = etl.fromdb(conn, 'SELECT * from d_user')
