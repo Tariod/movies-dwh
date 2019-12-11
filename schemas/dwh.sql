@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS d_studio
 CREATE TABLE IF NOT EXISTS d_language
 (
     id        SERIAL PRIMARY KEY,
-    name      TEXT NOT NULL UNIQUE,
+    name      TEXT NOT NULL,
     iso_639_1 TEXT NOT NULL UNIQUE
 );
 
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS d_country
 
 CREATE TABLE IF NOT EXISTS d_keyword
 (
-    id   INT PRIMARY KEY,
+    id   SERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE
 );
 
@@ -135,15 +135,15 @@ CREATE TABLE IF NOT EXISTS d_character
 (
     id        SERIAL PRIMARY KEY,
     id_gender INT REFERENCES d_gender (id),
-    name      TEXT NOT NULL UNIQUE
+    name      TEXT NOT NULL,
+    UNIQUE (id_gender, name)
 );
 
 CREATE TABLE IF NOT EXISTS d_people
 (
-    id        SERIAL PRIMARY KEY,
-    id_gender INT REFERENCES d_gender (id),
-    name      TEXT NOT NULL,
-    id_tmdb   TEXT NOT NULL UNIQUE
+    id      SERIAL PRIMARY KEY,
+    name    TEXT NOT NULL,
+    tmdb_id TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS d_department
@@ -192,8 +192,8 @@ CREATE TABLE IF NOT EXISTS f_movie_popularity
     id_release_status INT REFERENCES d_release_status (id),
     id_user           INT REFERENCES d_user (id),
     f_rating          REAL CHECK (f_rating IS NULL OR (f_rating >= 0 AND f_rating <= 5)),
-    f_budget          INT CHECK (f_budget IS NULL OR f_budget >= 0),
-    f_revenue         INT,
+    f_budget          BIGINT CHECK (f_budget IS NULL OR f_budget >= 0),
+    f_revenue         BIGINT,
     f_runtime         REAL CHECK (f_runtime IS NULL OR f_runtime >= 0),
     f_popularity      REAL
 );
